@@ -1,5 +1,307 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import ReactDOM from 'react-dom';
 import './App.css';
+
+function BookCarousel({ books = [] }) {
+  const trackRef = useRef(null);
+  const [canPrev, setCanPrev] = useState(false);
+  const [canNext, setCanNext] = useState(false);
+  const [selected, setSelected] = useState(null); // selected book index
+
+  useEffect(() => {
+    const track = trackRef.current;
+    if (!track) return;
+    const update = () => {
+      setCanPrev(track.scrollLeft > 5);
+      setCanNext(track.scrollLeft + track.clientWidth < track.scrollWidth - 5);
+    };
+    update();
+    track.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update);
+    return () => {
+      track.removeEventListener('scroll', update);
+      window.removeEventListener('resize', update);
+    };
+  }, [books]);
+
+  const scrollByViewport = (dir = 1) => {
+    const track = trackRef.current;
+    if (!track) return;
+    const offset = Math.round(track.clientWidth * 0.9) * dir;
+    track.scrollBy({ left: offset, behavior: 'smooth' });
+  };
+
+  return (
+    <>
+      <div className="book-carousel">
+        <button
+          className="carousel-btn prev"
+          onClick={() => scrollByViewport(-1)}
+          aria-label="Previous books"
+          disabled={!canPrev}
+        >
+          ‹
+        </button>
+
+        <div className="carousel-viewport">
+          <div className="carousel-track" ref={trackRef} tabIndex="0" aria-live="polite">
+            {books.map((b, i) => (
+              <div
+                className="carousel-item"
+                key={b.id || i}
+                onClick={() => setSelected(i)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setSelected(i); }}
+                aria-label={`Open ${b.title}`}
+              >
+                <img src={b.src} alt={`${b.title} — ${b.author || ''}`} loading="lazy" />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <button
+          className="carousel-btn next"
+          onClick={() => scrollByViewport(1)}
+          aria-label="Next books"
+          disabled={!canNext}
+        >
+          ›
+        </button>
+      </div>
+
+      {selected !== null && (
+        <BookModal
+          book={books[selected]}
+          onClose={() => setSelected(null)}
+        />
+      )}
+    </>
+  );
+}
+
+function BookModal({ book, onClose }) {
+  const id = book.id || book.src;
+  const storageKey = `book_quickdesc_${id}`;
+  const [desc, setDesc] = useState(() => {
+    try {
+      return localStorage.getItem(storageKey) || '';
+    } catch {
+      return '';
+    }
+  });
+
+  // Drag / position state
+  const modalRef = useRef(null);
+  const dragRef = useRef({ dragging: false, startX: 0, startY: 0, origLeft: 0, origTop: 0 });
+  const [pos, setPos] = useState({ left: null, top: null });
+
+  useEffect(() => {
+    const rect = modalRef.current?.getBoundingClientRect();
+    if (rect && pos.left === null) {
+      setPos({
+        left: Math.max(12, Math.round((window.innerWidth - rect.width) / 2)),
+        top: Math.max(12, Math.round((window.innerHeight - rect.height) / 2))
+      });
+    }
+  }, [pos.left]);
+
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
+  useEffect(() => {
+    return () => {
+      dragRef.current.dragging = false;
+      document.removeEventListener('pointermove', onPointerMove);
+      document.removeEventListener('pointerup', onPointerUp);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const save = (val) => {
+    setDesc(val);
+    try { localStorage.setItem(storageKey, val); } catch {}
+  };
+
+  // pointer handlers for drag
+  const onPointerDown = (e) => {
+    const px = e.clientX;
+    const py = e.clientY;
+    dragRef.current.dragging = true;
+    dragRef.current.startX = px;
+    dragRef.current.startY = py;
+    dragRef.current.origLeft = pos.left ?? 0;
+    dragRef.current.origTop = pos.top ?? 0;
+    document.addEventListener('pointermove', onPointerMove);
+    document.addEventListener('pointerup', onPointerUp);
+  };
+
+  const onPointerMove = (e) => {
+    if (!dragRef.current.dragging) return;
+    const dx = e.clientX - dragRef.current.startX;
+    const dy = e.clientY - dragRef.current.startY;
+    setPos({
+      left: Math.max(8, Math.min(window.innerWidth - 60, Math.round(dragRef.current.origLeft + dx))),
+      top: Math.max(8, Math.min(window.innerHeight - 60, Math.round(dragRef.current.origTop + dy)))
+    });
+  };
+
+  const onPointerUp = () => {
+    dragRef.current.dragging = false;
+    document.removeEventListener('pointermove', onPointerMove);
+    document.removeEventListener('pointerup', onPointerUp);
+  };
+
+  const modalJSX = (
+    <div
+      className="book-modal-backdrop"
+      role="dialog"
+      aria-modal="true"
+      onClick={onClose}
+    >
+      <div
+        className="book-modal"
+        ref={modalRef}
+        onClick={(e) => e.stopPropagation()}
+        style={pos.left !== null ? { left: pos.left + 'px', top: pos.top + 'px', position: 'absolute', transform: 'none' } : {}}
+      >
+        <div
+          className="modal-header"
+          onPointerDown={onPointerDown}
+          role="button"
+          aria-label="Move dialog"
+          tabIndex={0}
+        >
+          <button className="modal-close apple" aria-label="Close" onClick={onClose}>✕</button>
+          <div className="modal-header-title">{book.title}</div>
+        </div>
+
+        <div className="modal-body">
+          <div className="modal-left">
+            <img src={book.src} alt={book.title} />
+          </div>
+
+          <div className="modal-right">
+            <h3>{book.title}</h3>
+            {book.author && <p className="meta-author">{book.author}</p>}
+
+            {/* Description box (preloaded placeholder lines for now) */}
+            <label className="desc-label">Description</label>
+            <pre className="description-box">{'.\n.\n.\n.'}</pre>
+
+            {/* Moved to bottom: user's application notes */}
+            <label className="quick-desc-label">How did you apply it to yourself? (saved locally)</label>
+            <textarea
+              className="quick-desc"
+              value={desc}
+              onChange={(e) => save(e.target.value)}
+              placeholder="Write what you felt and how you applied it..."
+              rows={8}
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Render modal as a portal to document.body so it sits outside page sections
+  return ReactDOM.createPortal(modalJSX, document.body);
+}
+
+// New: Comment modal (portal), export and save-to-project support
+function CommentModal({ onClose }) {
+  const modalRef = useRef(null);
+  const [name, setName] = useState('');
+  const [comment, setComment] = useState(() => {
+    try { return localStorage.getItem('comment_draft') || ''; } catch { return ''; }
+  });
+  const [sending, setSending] = useState(false);
+
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
+  const saveDraft = (val) => {
+    setComment(val);
+    try { localStorage.setItem('comment_draft', val); } catch {}
+  };
+
+  // Single send function: POST to local server (tools/save-comments-server.js)
+  const handleSend = async () => {
+    if (!comment.trim()) {
+      alert('Please enter a comment.');
+      return;
+    }
+    setSending(true);
+    try {
+      const res = await fetch('http://localhost:5000/save-comment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, comment })
+      });
+      if (!res.ok) throw new Error(await res.text());
+      // clear draft and close modal
+      try { localStorage.removeItem('comment_draft'); } catch {}
+      alert('Comment sent and saved to project folder.');
+      onClose();
+    } catch (err) {
+      alert('Failed to send comment. Is the local server running? ' + (err.message || err));
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const modalJSX = (
+    <div className="book-modal-backdrop" role="dialog" aria-modal="true" onClick={onClose}>
+      <div className="book-modal" ref={modalRef} onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header" role="button" aria-label="Move dialog" tabIndex={0}>
+          <button className="modal-close apple" aria-label="Close" onClick={onClose}>✕</button>
+          <div className="modal-header-title">Leave a comment</div>
+        </div>
+
+        <div className="modal-body">
+          <div style={{ flex: 1 }}>
+            <label className="desc-label">Name (optional)</label>
+            <input
+              className="comment-input"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Your name"
+            />
+
+            <label className="desc-label" style={{ marginTop: 12 }}>Comment</label>
+            <textarea
+              className="quick-desc"
+              value={comment}
+              onChange={(e) => saveDraft(e.target.value)}
+              placeholder="Write your comment..."
+              rows={8}
+            />
+
+            <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
+              <button
+                className="primary-button"
+                type="button"
+                onClick={handleSend}
+                disabled={sending}
+              >
+                {sending ? 'Sending…' : 'Send'}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  return ReactDOM.createPortal(modalJSX, document.body);
+}
 
 function App() {
   useEffect(() => {
@@ -50,6 +352,18 @@ function App() {
     return () => io.disconnect();
   }, []);
 
+  // Update these src values to match the filenames you put in public/books/
+  const books = [
+    { id: 'how-to-win-friends', src: encodeURI('/books/How to Win Friends and Influence People - Dale Carnegie.jpg'), title: 'How to Win Friends and Influence People', author: 'Dale Carnegie' },
+    { id: 'life-leverage', src: encodeURI('/books/Life Leverage - Rob Moore.jpg'), title: 'Life Leverage', author: 'Rob Moore' },
+    { id: 'bitcoin-standard', src: encodeURI('/books/The Bitcoin Standard - Saifedean Ammous.jpg'), title: 'The Bitcoin Standard', author: 'Saifedean Ammous' },
+    { id: 'the-one-thing', src: encodeURI('/books/The ONE Thing - Gary Keller.jpg'), title: 'The ONE Thing', author: 'Gary Keller' },
+    { id: 'psychology-of-money', src: encodeURI('/books/The Psychology of Money - Morgan Housel.jpg'), title: 'The Psychology of Money', author: 'Morgan Housel' },
+    { id: 'unstoppable', src: encodeURI('/books/Unstoppable - Brian Tracy.jpg'), title: 'Unstoppable', author: 'Brian Tracy' },
+  ];
+
+  const [commentOpen, setCommentOpen] = useState(false);
+
   return (
     <div>
       {/* Fixed top navigation bar */}
@@ -87,7 +401,7 @@ function App() {
           </div>
 
           <div className="hero-photo">
-            <img src="/passport_photo.jpg" alt="Photo of Sunny Cho" loading="lazy" />
+            <img src="/passport_photo.jpg" alt="Sunny Cho" loading="lazy" />
           </div>
         </div>
 
@@ -227,14 +541,9 @@ function App() {
             <div className="accordion-content stagger">
               <div className="about-block">
                 <h3>Books I Love</h3>
-                <ul className="bulleted">
-                  <li>The Psychology of Money - Morgan Housel</li>
-                  <li>The Bitcoin Standard - Saifedean Ammous</li>
-                  <li>How to Win Friends and Influence People - Dale Carnegie</li>
-                  <li>Life Leverage - Rob Moore</li>
-                  <li>Unstoppable - Brian Tracy</li>
-                  <li>The ONE Thing - Gary Keller</li>
-                </ul>
+
+                {/* Carousel - uses the books array above */}
+                <BookCarousel books={books} />
               </div>
 
               <div className="about-block">
@@ -272,6 +581,18 @@ function App() {
             </a>
           </div>
         </div>
+
+        {/* Leave a comment button (below contact) */}
+        <div style={{ width: '80%', margin: '24px auto', display: 'flex', justifyContent: 'center' }}>
+          <button
+            className="leave-comment-btn"
+            onClick={() => setCommentOpen(true)}
+          >
+            Leave a comment
+          </button>
+        </div>
+
+        {commentOpen && <CommentModal onClose={() => setCommentOpen(false)} />}
       </div>
     </div>
   );
