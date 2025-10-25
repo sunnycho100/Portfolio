@@ -10,7 +10,7 @@ function BookCarousel({ books = [] }) {
 
   useEffect(() => {
     const track = trackRef.current;
-    if (!track) return;
+    if (!track) return; // comment
     const update = () => {
       setCanPrev(track.scrollLeft > 5);
       setCanNext(track.scrollLeft + track.clientWidth < track.scrollWidth - 5);
