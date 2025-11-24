@@ -2,6 +2,17 @@
 import { useEffect, useState } from "react";
 import Reveal from "./Reveal.jsx";
 
+const LANGUAGE_COLORS = {
+  JavaScript: "#f1e05a",
+  CSS: "#563d7c",
+  HTML: "#e34c26",
+  SystemVerilog: "#178600",
+  Verilog: "#b2b7f8",
+  Other: "#9ca3af",
+};
+
+const FALLBACK_COLORS = ["#8b5cf6", "#22c55e", "#0ea5e9", "#f97316", "#ec4899"];
+
 function formatDate(iso) {
   if (!iso) return "";
   const d = new Date(iso);
@@ -51,21 +62,76 @@ export default function Github() {
 
         {status === "idle" && data && (
           <div className="github-layout stagger" style={{ padding: "0 24px 24px" }}>
-            {/* Languages summary */}
-            <section style={{ marginBottom: "18px" }}>
+            {/* Languages summary with GitHub-style bar */}
+            <section className="lang-summary">
               <h3 className="github-subheading">Languages used</h3>
-              <ul className="chips-inline">
-                {Object.entries(data.languages)
-                  .sort((a, b) => b[1] - a[1])
-                  .map(([lang, count]) => (
-                    <li key={lang}>
-                      {lang} ({count})
-                    </li>
-                  ))}
-              </ul>
+
+              {(() => {
+                // Support either `data.languageBytes` (bytes) or fall back to `data.languages` (counts)
+                const raw = data.languageBytes && Object.keys(data.languageBytes).length > 0
+                  ? data.languageBytes
+                  : (data.languages || {});
+
+                const entries = Object.entries(raw || {});
+                if (entries.length === 0) {
+                  return <p className="lang-empty">No language data available.</p>;
+                }
+
+                const totalBytes = entries.reduce((sum, [, bytes]) => sum + bytes, 0);
+
+                // Sort by usage descending
+                const sorted = entries.sort((a, b) => b[1] - a[1]);
+
+                return (
+                  <>
+                    {/* Bar */}
+                    <div className="lang-bar">
+                      {sorted.map(([lang, bytes], idx) => {
+                        const pct = totalBytes ? (bytes / totalBytes) * 100 : 0;
+                        const color =
+                          LANGUAGE_COLORS[lang] ||
+                          FALLBACK_COLORS[idx % FALLBACK_COLORS.length];
+
+                        return (
+                          <div
+                            key={lang}
+                            className="lang-bar-segment"
+                            style={{
+                              flex: bytes,
+                              backgroundColor: color,
+                            }}
+                            title={`${lang} ${pct.toFixed(1)}%`}
+                          />
+                        );
+                      })}
+                    </div>
+
+                    {/* Legend */}
+                    <ul className="lang-legend">
+                      {sorted.map(([lang, bytes], idx) => {
+                        const pct = totalBytes ? (bytes / totalBytes) * 100 : 0;
+                        const color =
+                          LANGUAGE_COLORS[lang] ||
+                          FALLBACK_COLORS[idx % FALLBACK_COLORS.length];
+
+                        return (
+                          <li key={lang} className="lang-legend-item">
+                            <span
+                              className="lang-dot"
+                              style={{ backgroundColor: color }}
+                            />
+                            <span className="lang-label">{lang}</span>
+                            <span className="lang-percent">{pct.toFixed(1)}%</span>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </>
+                );
+              })()}
             </section>
 
-            {/* Repo cards grid */}
+            {/* Repo cards grid (unchanged below this) */}
             <section>
               <h3 className="github-subheading">Repositories</h3>
 
