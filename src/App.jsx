@@ -6,6 +6,7 @@ import Education from './components/Education.jsx';
 import Experience from './components/Experience.jsx';
 import Skills from './components/Skills.jsx';
 import Activities from './components/Activities.jsx';
+import Github from './components/Github.jsx';   // new
 import More from './components/More.jsx';
 import Contact from './components/Contact.jsx';
 
@@ -20,6 +21,7 @@ export default function App() {
         <Experience />
         <Skills />
         <Activities />
+        <Github />   {/* new tab section between Activities and More */}
         <More />
         <Contact />
       </div>

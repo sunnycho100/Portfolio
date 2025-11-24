@@ -20,7 +20,17 @@ function useActiveSection(ids) {
 }
 
 export default function TopNav() {
-  useActiveSection(['home','about','education','experience','skills','activities','more','contact']);
+  useActiveSection([
+  'home',
+  'about',
+  'education',
+  'experience',
+  'skills',
+  'activities',
+  'github',
+  'more',
+  'contact'
+]);
 
   return (
     <nav className="topnav" aria-label="Primary">
@@ -37,6 +47,7 @@ export default function TopNav() {
             <li><a className="tab" href="#experience">Experience</a></li>
             <li><a className="tab" href="#skills">Skills</a></li>
             <li><a className="tab" href="#activities">Activities</a></li>
+            <li><a className="tab" href="#github">GitHub</a></li>   {/* new tab */}
             <li><a className="tab" href="#more">More</a></li>
             <li><a className="tab" href="#contact">Contact</a></li>
           </ul>
