@@ -2,6 +2,17 @@
 import { useEffect, useState } from "react";
 import Reveal from "./Reveal.jsx";
 
+function formatDate(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
+
 export default function Github() {
   const [data, setData] = useState(null);
   const [status, setStatus] = useState("idle"); // idle | loading | error
@@ -39,10 +50,10 @@ export default function Github() {
         )}
 
         {status === "idle" && data && (
-          <div className="stagger" style={{ padding: "0 24px 24px" }}>
-            {/* Language summary */}
+          <div className="github-layout stagger" style={{ padding: "0 24px 24px" }}>
+            {/* Languages summary */}
             <section style={{ marginBottom: "18px" }}>
-              <h3 style={{ margin: "8px 0" }}>Languages used</h3>
+              <h3 className="github-subheading">Languages used</h3>
               <ul className="chips-inline">
                 {Object.entries(data.languages)
                   .sort((a, b) => b[1] - a[1])
@@ -54,68 +65,87 @@ export default function Github() {
               </ul>
             </section>
 
-            {/* Repo list */}
+            {/* Repo cards grid */}
             <section>
-              <h3 style={{ margin: "8px 0" }}>Repositories</h3>
-              <ul className="item-list">
-  {data.repos
-    .slice()
-    .sort(
-      (a, b) =>
-        new Date(b.updated_at).getTime() -
-        new Date(a.updated_at).getTime()
-    )
-    .map((r) => {
-      // Prefer the langs array from backend, fall back to primary language
-      const displayLangs =
-        r.langs && r.langs.length > 0
-          ? r.langs.slice(0, 3) // show top 3 languages
-          : r.language
-          ? [r.language]
-          : [];
+              <h3 className="github-subheading">Repositories</h3>
 
-      return (
-        <li key={r.id} className="list-item">
-            <div className="role-line">
-                <a
-                href={r.html_url}
-                target="_blank"
-                rel="noreferrer"
-                style={{ textDecoration: "none", color: "inherit" }}
-                >
-                <strong>{r.name}</strong>
-                </a>
+              <div className="repo-grid">
+                {data.repos
+                  .slice()
+                  .sort(
+                    (a, b) =>
+                      new Date(b.updated_at).getTime() -
+                      new Date(a.updated_at).getTime()
+                  )
+                  .map((r) => {
+                    const displayLangs =
+                      r.langs && r.langs.length > 0
+                        ? r.langs.slice(0, 3) // top 3 languages
+                        : r.language
+                        ? [r.language]
+                        : [];
 
-                {displayLangs.length > 0 && (
-                <span className="meta">
-                    {" "}
-                    · {displayLangs.join(" · ")}
-                </span>
-                )}
+                    const primaryLang = displayLangs[0] || null;
+                    const extraLangs = displayLangs.slice(1);
 
-                {r.stargazers_count > 0 && (
-                <span className="meta">
-                    {" "}
-                    · ★ {r.stargazers_count}
-                </span>
-                )}
-            </div>
+                    return (
+                      <article key={r.id} className="repo-card">
+                        {/* Header: name + small external hint */}
+                        <header className="repo-card-header">
+                          <a
+                            href={r.html_url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="repo-name-link"
+                          >
+                            <span className="repo-name">{r.name}</span>
+                            <span className="repo-link-icon" aria-hidden="true">
+                              ↗
+                            </span>
+                          </a>
+                        </header>
 
-            {r.description && (
-                <p
-                style={{
-                    margin: "4px 0 0 0",
-                    fontSize: "13px",
-                    color: "#222",
-                }}
-                >
-                {r.description}
-                </p>
-            )}
-            </li>
-        );
-        })}
-    </ul>
+                        {/* Description */}
+                        {r.description && (
+                          <p className="repo-desc">
+                            {r.description}
+                          </p>
+                        )}
+
+                        {/* Tags row (languages + stars) */}
+                        <div className="repo-tags">
+                          {primaryLang && (
+                            <span className="repo-tag repo-tag-primary">
+                              {primaryLang}
+                            </span>
+                          )}
+
+                          {extraLangs.map((lang) => (
+                            <span key={lang} className="repo-tag">
+                              {lang}
+                            </span>
+                          ))}
+
+                          {r.stargazers_count > 0 && (
+                            <span className="repo-tag repo-tag-metric">
+                              ★ {r.stargazers_count}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Meta line */}
+                        <div className="repo-meta">
+                          {r.forks_count > 0 && (
+                            <span>Forks {r.forks_count} · </span>
+                          )}
+                          <span>
+                            Updated {formatDate(r.updated_at)}
+                          </span>
+                        </div>
+                      </article>
+                    );
+                  })}
+              </div>
             </section>
           </div>
         )}
