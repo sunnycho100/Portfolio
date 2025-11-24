@@ -1,3 +1,4 @@
+// server/index.js
 const express = require("express");
 const cors = require("cors");
 const axios = require("axios");
@@ -6,37 +7,64 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Your GitHub username
 const GITHUB_USERNAME = "sunnycho100";
 
+// Optional: personal access token to avoid rate limits
+// Put it in a .env and load with dotenv if you want
+const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
+
+// Small helper so headers are consistent
+function githubHeaders() {
+  const headers = {
+    "User-Agent": "portfolio-backend",
+    Accept: "application/vnd.github+json",
+  };
+  if (GITHUB_TOKEN) {
+    headers.Authorization = `Bearer ${GITHUB_TOKEN}`;
+  }
+  return headers;
+}
+
+// GET /api/github/overview
+// Returns:
+// {
+//   username,
+//   repos: [...],
+//   languages: { JavaScript: 2, SystemVerilog: 1, ... },   // primary language counts
+//   languageBytes: { JavaScript: 12345, CSS: 7890, ... }   // summed bytes across all repos
+// }
 app.get("/api/github/overview", async (req, res) => {
   try {
+    // 1. Fetch all public repos
     const ghRes = await axios.get(
       `https://api.github.com/users/${GITHUB_USERNAME}/repos`,
       {
         params: { per_page: 100, sort: "updated" },
-        headers: {
-          "User-Agent": "portfolio-backend",
-        },
+        headers: githubHeaders(),
       }
     );
 
     const repos = ghRes.data;
 
-    // For each repo, also fetch its language breakdown
+    // 2. For each repo, fetch language breakdown
     const simplified = await Promise.all(
       repos.map(async (r) => {
         let langs = [];
         let langBytes = [];
 
         try {
-          const langRes = await axios.get(r.languages_url, {
-            headers: { "User-Agent": "portfolio-backend" },
-          });
+          if (r.languages_url) {
+            const langRes = await axios.get(r.languages_url, {
+              headers: githubHeaders(),
+            });
 
-          const entries = Object.entries(langRes.data); // [ [lang, bytes], ... ]
-          entries.sort((a, b) => b[1] - a[1]);
-          langBytes = entries.map(([name, bytes]) => ({ name, bytes }));
-          langs = langBytes.map((lb) => lb.name);
+            const entries = Object.entries(langRes.data); // [ [lang, bytes], ... ]
+            entries.sort((a, b) => b[1] - a[1]);
+
+            langBytes = entries.map(([name, bytes]) => ({ name, bytes }));
+            langs = langBytes.map((lb) => lb.name);
+          }
         } catch (err) {
           console.error("Languages error for", r.name, err.message);
         }
@@ -46,9 +74,9 @@ app.get("/api/github/overview", async (req, res) => {
           name: r.name,
           html_url: r.html_url,
           description: r.description,
-          language: r.language, // primary language
-          langs,                // language names ordered by usage
-          langBytes,            // [{ name, bytes }]
+          language: r.language || "Other", // primary language
+          langs,                            // list of languages sorted by bytes
+          langBytes,                        // [{ name, bytes }]
           stargazers_count: r.stargazers_count,
           forks_count: r.forks_count,
           updated_at: r.updated_at,
@@ -56,10 +84,9 @@ app.get("/api/github/overview", async (req, res) => {
       })
     );
 
-    // Count how many repos use each primary language (for reference)
-    const languages = {};
-    // Sum total bytes per language across all repos (for the bar)
-    const languageBytes = {};
+    // 3. Aggregate summaries
+    const languages = {};      // count of repos by primary language
+    const languageBytes = {};  // total bytes per language across all repos
 
     for (const r of simplified) {
       const primary = r.language || "Other";
@@ -68,23 +95,30 @@ app.get("/api/github/overview", async (req, res) => {
       if (Array.isArray(r.langBytes)) {
         for (const lb of r.langBytes) {
           if (!lb.bytes) continue;
-          languageBytes[lb.name] = (languageBytes[lb.name] || 0) + lb.bytes;
+          languageBytes[lb.name] =
+            (languageBytes[lb.name] || 0) + lb.bytes;
         }
       }
     }
 
+    // 4. Send response
     res.json({
       username: GITHUB_USERNAME,
       repos: simplified,
-      languages,      // repo counts by primary language
-      languageBytes,  // total bytes per language across all repos
+      languages,
+      languageBytes,
     });
   } catch (err) {
-    console.error("GitHub API error:", err.response?.status, err.message);
+    console.error(
+      "GitHub API error:",
+      err.response?.status,
+      err.message
+    );
     res.status(500).json({ error: "Failed to fetch GitHub data" });
   }
 });
 
+// Start server
 const PORT = 4000;
 app.listen(PORT, () => {
   console.log(`Backend listening on http://localhost:${PORT}`);

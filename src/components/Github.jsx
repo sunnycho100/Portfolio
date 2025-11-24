@@ -8,6 +8,8 @@ const LANGUAGE_COLORS = {
   HTML: "#e34c26",
   SystemVerilog: "#178600",
   Verilog: "#b2b7f8",
+  "C++": "#f34b7d",
+  Python: "#3572A5",
   Other: "#9ca3af",
 };
 
@@ -61,33 +63,56 @@ export default function Github() {
         )}
 
         {status === "idle" && data && (
-          <div className="github-layout stagger" style={{ padding: "0 24px 24px" }}>
-            {/* Languages summary with GitHub-style bar */}
+          <div
+            className="github-layout stagger"
+            style={{ padding: "0 24px 24px" }}
+          >
+            {/* Languages summary with GitHub-style bar (top 5 + Other) */}
             <section className="lang-summary">
               <h3 className="github-subheading">Languages used</h3>
 
               {(() => {
-                // Support either `data.languageBytes` (bytes) or fall back to `data.languages` (counts)
-                const raw = data.languageBytes && Object.keys(data.languageBytes).length > 0
-                  ? data.languageBytes
-                  : (data.languages || {});
+                // Prefer byte-based aggregation, fall back to repo counts
+                const raw =
+                  data.languageBytes &&
+                  Object.keys(data.languageBytes).length > 0
+                    ? data.languageBytes
+                    : data.languages || {};
 
                 const entries = Object.entries(raw || {});
                 if (entries.length === 0) {
-                  return <p className="lang-empty">No language data available.</p>;
+                  return (
+                    <p className="lang-empty">No language data available.</p>
+                  );
                 }
 
-                const totalBytes = entries.reduce((sum, [, bytes]) => sum + bytes, 0);
+                const total = entries.reduce(
+                  (sum, [, value]) => sum + value,
+                  0
+                );
 
                 // Sort by usage descending
                 const sorted = entries.sort((a, b) => b[1] - a[1]);
+
+                // Keep top 5, aggregate the rest into "Other"
+                const top = sorted.slice(0, 5);
+                if (sorted.length > 5) {
+                  const rest = sorted.slice(5);
+                  const otherValue = rest.reduce(
+                    (sum, [, value]) => sum + value,
+                    0
+                  );
+                  if (otherValue > 0) {
+                    top.push(["Other", otherValue]);
+                  }
+                }
 
                 return (
                   <>
                     {/* Bar */}
                     <div className="lang-bar">
-                      {sorted.map(([lang, bytes], idx) => {
-                        const pct = totalBytes ? (bytes / totalBytes) * 100 : 0;
+                      {top.map(([lang, value], idx) => {
+                        const pct = total ? (value / total) * 100 : 0;
                         const color =
                           LANGUAGE_COLORS[lang] ||
                           FALLBACK_COLORS[idx % FALLBACK_COLORS.length];
@@ -97,7 +122,7 @@ export default function Github() {
                             key={lang}
                             className="lang-bar-segment"
                             style={{
-                              flex: bytes,
+                              flex: value,
                               backgroundColor: color,
                             }}
                             title={`${lang} ${pct.toFixed(1)}%`}
@@ -108,8 +133,8 @@ export default function Github() {
 
                     {/* Legend */}
                     <ul className="lang-legend">
-                      {sorted.map(([lang, bytes], idx) => {
-                        const pct = totalBytes ? (bytes / totalBytes) * 100 : 0;
+                      {top.map(([lang, value], idx) => {
+                        const pct = total ? (value / total) * 100 : 0;
                         const color =
                           LANGUAGE_COLORS[lang] ||
                           FALLBACK_COLORS[idx % FALLBACK_COLORS.length];
@@ -121,7 +146,9 @@ export default function Github() {
                               style={{ backgroundColor: color }}
                             />
                             <span className="lang-label">{lang}</span>
-                            <span className="lang-percent">{pct.toFixed(1)}%</span>
+                            <span className="lang-percent">
+                              {pct.toFixed(1)}%
+                            </span>
                           </li>
                         );
                       })}
@@ -131,7 +158,7 @@ export default function Github() {
               })()}
             </section>
 
-            {/* Repo cards grid (unchanged below this) */}
+            {/* Repo cards grid */}
             <section>
               <h3 className="github-subheading">Repositories</h3>
 
@@ -146,7 +173,7 @@ export default function Github() {
                   .map((r) => {
                     const displayLangs =
                       r.langs && r.langs.length > 0
-                        ? r.langs.slice(0, 3) // top 3 languages
+                        ? r.langs.slice(0, 3)
                         : r.language
                         ? [r.language]
                         : [];
@@ -156,7 +183,6 @@ export default function Github() {
 
                     return (
                       <article key={r.id} className="repo-card">
-                        {/* Header: name + small external hint */}
                         <header className="repo-card-header">
                           <a
                             href={r.html_url}
@@ -171,14 +197,10 @@ export default function Github() {
                           </a>
                         </header>
 
-                        {/* Description */}
                         {r.description && (
-                          <p className="repo-desc">
-                            {r.description}
-                          </p>
+                          <p className="repo-desc">{r.description}</p>
                         )}
 
-                        {/* Tags row (languages + stars) */}
                         <div className="repo-tags">
                           {primaryLang && (
                             <span className="repo-tag repo-tag-primary">
@@ -199,14 +221,11 @@ export default function Github() {
                           )}
                         </div>
 
-                        {/* Meta line */}
                         <div className="repo-meta">
                           {r.forks_count > 0 && (
                             <span>Forks {r.forks_count} · </span>
                           )}
-                          <span>
-                            Updated {formatDate(r.updated_at)}
-                          </span>
+                          <span>Updated {formatDate(r.updated_at)}</span>
                         </div>
                       </article>
                     );
