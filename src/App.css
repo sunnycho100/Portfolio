@@ -994,3 +994,111 @@ h2 { margin: 16px 24px; font-size: 18px; }
 }
 
 .leave-comment .textarea { resize: vertical; }
+
+/* ===== Comment cards (grid similar to repo cards) ===== */
+.comment-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 14px;
+  margin-top: 10px;
+}
+
+.comment-card {
+  position: relative;
+  padding: 14px 16px 12px;
+  border-radius: 14px;
+  border: 1px solid #e6e6e6;
+  background: #ffffff;
+  box-shadow:
+    0 1px 2px rgba(0,0,0,0.04),
+    0 8px 20px rgba(0,0,0,0.04);
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+.comment-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(79, 70, 229, 0.45);
+  box-shadow:
+    0 3px 10px rgba(0,0,0,0.06),
+    0 16px 32px rgba(0,0,0,0.08);
+  background: radial-gradient(circle at top left, #f6f6ff, #ffffff);
+}
+
+.comment-card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.comment-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  color: #fff;
+  font-weight: 700;
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  letter-spacing: .5px;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.35);
+}
+
+.comment-header-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.comment-name {
+  font-weight: 600;
+  font-size: 13px;
+  color: #111;
+}
+
+.comment-date {
+  font-size: 11px;
+  color: #777;
+}
+
+.comment-body {
+  margin: 6px 0 0 0;
+  font-size: 13px;
+  color: #333;
+  line-height: 1.5;
+  word-break: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 6;       /* show up to 6 lines in the card */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.comment-footer-hint {
+  margin-top: 8px;
+  font-size: 11px;
+  color: #777;
+}
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+  .comment-card {
+    background: #0f1420;
+    border-color: #1b2230;
+    box-shadow:
+      0 1px 2px rgba(0,0,0,0.6),
+      0 12px 28px rgba(0,0,0,0.55);
+  }
+  .comment-card:hover {
+    border-color: rgba(154, 167, 255, 0.8);
+    background: radial-gradient(circle at top left, #151b2a, #0f1420);
+  }
+  .comment-name { color: #e7e9ee; }
+  .comment-body { color: #dadff5; }
+  .comment-date { color: #9ca3af; }
+}

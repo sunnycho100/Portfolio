@@ -1,5 +1,7 @@
+// src/components/More.jsx
 import Reveal from './Reveal.jsx';
 import BookCarousel from './BookCarousel.jsx';
+import CommentsSection from './CommentsSection.jsx';
 
 export default function More() {
   const books = [
@@ -51,6 +53,9 @@ export default function More() {
             </div>
           </div>
         </details>
+
+        {/* New: Comments accordion */}
+        <CommentsSection />
       </Reveal>
     </section>
   );

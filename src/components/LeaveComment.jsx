@@ -5,12 +5,21 @@ export default function LeaveComment() {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [message, setMessage] = useState("");
-  const [preview, setPreview] = useState([]);
 
   const canSubmit =
     name.trim().length > 0 &&
     message.trim().length > 0 &&
     message.trim().length <= 500;
+
+  function saveToLocal(entry) {
+    try {
+      const key = "portfolioComments";
+      const existing = JSON.parse(localStorage.getItem(key) || "[]");
+      localStorage.setItem(key, JSON.stringify([entry, ...existing]));
+      // notify listeners
+      window.dispatchEvent(new Event("comments-updated"));
+    } catch {}
+  }
 
   function onSubmitLocal(e) {
     e.preventDefault();
@@ -23,13 +32,10 @@ export default function LeaveComment() {
       createdAt: new Date().toISOString(),
     };
 
-    setPreview([entry, ...preview]);
+    saveToLocal(entry);
     setName("");
     setMessage("");
     setOpen(false);
-
-    // later replace with API call
-    // await createComment({ name, message })
   }
 
   return (
@@ -84,23 +90,6 @@ export default function LeaveComment() {
               </div>
             </form>
           </div>
-        </div>
-      )}
-
-      {preview.length > 0 && (
-        <div className="comments-list">
-          <h4>Recent comments</h4>
-          <ul>
-            {preview.map((c) => (
-              <li key={c.id} className="comment">
-                <div className="comment-head">
-                  <strong>{c.name}</strong>
-                  <span>{new Date(c.createdAt).toLocaleString()}</span>
-                </div>
-                <p>{c.message}</p>
-              </li>
-            ))}
-          </ul>
         </div>
       )}
     </div>
