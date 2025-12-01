@@ -1,7 +1,12 @@
+require("dotenv").config();
+
 // server/index.js
 const express = require("express");
 const cors = require("cors");
 const axios = require("axios");
+
+console.log("Token loaded:", !!process.env.GITHUB_TOKEN);
+// testing
 
 const app = express();
 app.use(cors());

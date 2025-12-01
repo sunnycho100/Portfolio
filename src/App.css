@@ -578,6 +578,45 @@ h2 { margin: 16px 24px; font-size: 18px; }
   padding: 12px;
 }
 
+.modal-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.modal-header-title {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+/* Apple style red close button */
+.modal-close-apple {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: none;
+  padding: 0;
+  margin-right: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  cursor: pointer;
+}
+
+.apple-close-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #ff5f57;
+  display: block;
+}
+
+.modal-close-apple:hover .apple-close-dot {
+  filter: brightness(1.05);
+}
+
 /* responsive width; positioned by inline left/top from JS */
 .book-modal {
   position: absolute;
