@@ -1,12 +1,14 @@
 // src/components/Contact.jsx
-import Reveal from './Reveal.jsx';
-import { FaEnvelope, FaGithub, FaLinkedin } from 'react-icons/fa';
+import Reveal from "./Reveal.jsx";
+import { FaEnvelope, FaGithub, FaLinkedin } from "react-icons/fa";
+import LeaveComment from "./LeaveComment";
 
 export default function Contact() {
   return (
     <section id="contact" className="contact-container section">
       <Reveal delay="340ms">
         <h2>Contact</h2>
+
         <div className="social-icons stagger">
           <a href="mailto:shcho1551@gmail.com" aria-label="Email">
             <FaEnvelope />
@@ -29,6 +31,10 @@ export default function Contact() {
           </a>
         </div>
       </Reveal>
+
+      <div className="contact-cta">
+        <LeaveComment />
+      </div>
     </section>
   );
 }

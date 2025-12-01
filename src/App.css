@@ -916,3 +916,81 @@ h2 { margin: 16px 24px; font-size: 18px; }
     color: #9ca3af;
   }
 }
+
+/* leave-comment */
+.leave-comment { margin-top: 1.25rem; }
+.btn { padding: 0.5rem 0.9rem; border-radius: 8px; border: 1px solid #ddd; background: #fff; cursor: pointer; }
+.btn.primary { background: #111; color: #fff; border-color: #111; }
+.btn.secondary { background: #f3f3f3; }
+
+.modal-backdrop {
+  position: fixed; inset: 0; background: rgba(0,0,0,.35);
+  display: flex; align-items: center; justify-content: center; z-index: 50;
+}
+.modal {
+  width: 100%; max-width: 520px; background: #fff; border-radius: 12px; padding: 16px; box-shadow: 0 10px 30px rgba(0,0,0,.2);
+}
+.form { display: grid; gap: 12px; }
+.label { display: grid; gap: 6px; font-size: 14px; }
+.input, .textarea {
+  width: 100%; border: 1px solid #ddd; border-radius: 8px; padding: 10px 12px; font-size: 14px;
+}
+.hint { font-size: 12px; color: #666; text-align: right; margin-top: 4px; }
+.modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px; }
+
+.comments-list { margin-top: 16px; }
+.comment { padding: 10px 0; border-top: 1px solid #eee; }
+.comment-head { display: flex; gap: 8px; align-items: baseline; }
+.comment-head span { color: #777; font-size: 12px; }
+
+/* center the LeaveComment area under the icons */
+.contact-cta {
+  display: flex;
+  justify-content: center;
+  margin-top: 16px;
+}
+
+/* optional: also center only the trigger button */
+.leave-comment > .btn {
+  display: inline-flex;
+  margin: 0 auto;
+}
+
+.contact-container {
+  width: 80%;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.contact-cta {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin-top: 16px;
+}
+
+/* Fix comment modal sizing and clipping */
+.leave-comment .modal {
+  width: min(540px, 92vw);
+  max-height: 85vh;
+  padding: 20px;
+  border-radius: 14px;
+  overflow: hidden;           /* clip inputs to rounded corners */
+  background: #fff;
+  box-shadow: 0 10px 30px rgba(0,0,0,.2);
+}
+
+/* Let grid children shrink inside the modal */
+.leave-comment .form > * { min-width: 0; }
+
+/* Inputs should never exceed the modal content box */
+.leave-comment .input,
+.leave-comment .textarea {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.leave-comment .textarea { resize: vertical; }
