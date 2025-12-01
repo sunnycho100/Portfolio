@@ -4,6 +4,7 @@ import { useState } from "react";
 export default function LeaveComment() {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
+  const [relationship, setRelationship] = useState("");
   const [message, setMessage] = useState("");
 
   const canSubmit =
@@ -11,14 +12,17 @@ export default function LeaveComment() {
     message.trim().length > 0 &&
     message.trim().length <= 500;
 
-  function saveToLocal(entry) {
+  function saveToLocalStorage(entry) {
+    const key = "portfolioComments";
     try {
-      const key = "portfolioComments";
       const existing = JSON.parse(localStorage.getItem(key) || "[]");
-      localStorage.setItem(key, JSON.stringify([entry, ...existing]));
-      // notify listeners
+      const next = [entry, ...(Array.isArray(existing) ? existing : [])];
+      localStorage.setItem(key, JSON.stringify(next));
+      // tell the comments section to refresh
       window.dispatchEvent(new Event("comments-updated"));
-    } catch {}
+    } catch {
+      // ignore storage errors silently
+    }
   }
 
   function onSubmitLocal(e) {
@@ -28,12 +32,14 @@ export default function LeaveComment() {
     const entry = {
       id: crypto.randomUUID(),
       name: name.trim(),
+      relationship: relationship.trim(), // may be empty
       message: message.trim(),
       createdAt: new Date().toISOString(),
     };
 
-    saveToLocal(entry);
+    saveToLocalStorage(entry);
     setName("");
+    setRelationship("");
     setMessage("");
     setOpen(false);
   }
@@ -59,6 +65,18 @@ export default function LeaveComment() {
                   placeholder="Your name"
                   className="input"
                   required
+                />
+              </label>
+
+              <label className="label">
+                <span>Relationship</span>
+                <input
+                  type="text"
+                  value={relationship}
+                  onChange={(e) => setRelationship(e.target.value)}
+                  placeholder="e.g., classmate, mentor, coworker"
+                  className="input"
+                  maxLength={40}
                 />
               </label>
 

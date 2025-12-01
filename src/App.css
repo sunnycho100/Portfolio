@@ -1102,3 +1102,23 @@ h2 { margin: 16px 24px; font-size: 18px; }
   .comment-body { color: #dadff5; }
   .comment-date { color: #9ca3af; }
 }
+
+/* name + relationship on one line */
+.comment-name-line {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* slightly lighter than name */
+.comment-rel {
+  font-size: 12px;
+  font-weight: 500;
+  color: #666;
+}
+
+/* dark mode color for relationship */
+@media (prefers-color-scheme: dark) {
+  .comment-rel { color: #9ca3af; }
+}

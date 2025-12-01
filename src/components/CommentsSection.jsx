@@ -67,7 +67,12 @@ export default function CommentsSection() {
                         {initials(c.name || "?")}
                       </div>
                       <div className="comment-header-text">
-                        <div className="comment-name">{c.name}</div>
+                        <div className="comment-name-line">
+                          <div className="comment-name">{c.name}</div>
+                          {c.relationship ? (
+                            <span className="comment-rel">· {c.relationship}</span>
+                          ) : null}
+                        </div>
                         <div className="comment-date">
                           {new Date(c.createdAt).toLocaleString()}
                         </div>
@@ -82,9 +87,7 @@ export default function CommentsSection() {
               })}
             </div>
 
-            <div className="comment-footer-hint">
-              Showing newest first
-            </div>
+            <div className="comment-footer-hint">Showing newest first</div>
           </>
         )}
       </div>
