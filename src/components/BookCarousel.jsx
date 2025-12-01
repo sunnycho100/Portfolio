@@ -1,4 +1,3 @@
-// src/components/BookCarousel.jsx
 import React, { useEffect, useRef, useState, useLayoutEffect } from "react";
 import { createPortal } from "react-dom";
 
@@ -6,7 +5,7 @@ function clamp(v, min, max) {
   return Math.max(min, Math.min(max, v));
 }
 
-function BookModal({ book, anchor, onClose }) {
+function BookModal({ book, onClose }) {
   const id = book.id || book.src;
   const notesKey = `book_quickdesc_${id}`;
   const commentsKey = `book_comments_${id}`;
@@ -18,6 +17,7 @@ function BookModal({ book, anchor, onClose }) {
       return "";
     }
   });
+
   const [comments, setComments] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem(commentsKey) || "[]");
@@ -25,6 +25,7 @@ function BookModal({ book, anchor, onClose }) {
       return [];
     }
   });
+
   const [name, setName] = useState("");
   const [text, setText] = useState("");
 
@@ -36,9 +37,10 @@ function BookModal({ book, anchor, onClose }) {
     origLeft: 0,
     origTop: 0,
   });
+
   const [pos, setPos] = useState({ left: null, top: null });
 
-  // Initial position: always center the modal on screen
+  // Center popup on open
   useLayoutEffect(() => {
     const node = modalRef.current;
     if (!node) return;
@@ -47,80 +49,70 @@ function BookModal({ book, anchor, onClose }) {
     const vw = window.innerWidth;
     const vh = window.innerHeight;
 
-    const centeredLeft = (vw - rect.width) / 2;
-    const centeredTop = (vh - rect.height) / 2;
+    const left = (vw - rect.width) / 2;
+    const top = (vh - rect.height) / 2;
 
-    const left = clamp(centeredLeft, 8, vw - rect.width - 8);
-    const top = clamp(centeredTop, 8, vh - rect.height - 8);
-
-    setPos({ left, top });
-  }, [book]); // recenter if a different book is opened
+    setPos({
+      left: clamp(left, 8, vw - rect.width - 8),
+      top: clamp(top, 8, vh - rect.height - 8),
+    });
+  }, [book]);
 
   useEffect(() => {
-    const onKey = (e) => {
-      if (e.key === "Escape") onClose();
-    };
+    const onKey = (e) => e.key === "Escape" && onClose();
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  const saveNotes = (val) => {
-    setDesc(val);
+  const saveNotes = (value) => {
+    setDesc(value);
     try {
-      localStorage.setItem(notesKey, val);
-    } catch {
-      /* ignore */
-    }
+      localStorage.setItem(notesKey, value);
+    } catch {}
   };
 
   const addComment = () => {
     if (!text.trim()) return;
-    const entry = {
+    const item = {
       name: name.trim() || "Anonymous",
       text: text.trim(),
       ts: Date.now(),
     };
-    const next = [...comments, entry];
+    const next = [...comments, item];
     setComments(next);
     try {
       localStorage.setItem(commentsKey, JSON.stringify(next));
-    } catch {
-      /* ignore */
-    }
+    } catch {}
     setText("");
   };
 
-  // Drag handlers
+  // Drag behavior for header
   const onPointerDown = (e) => {
     dragRef.current.dragging = true;
     dragRef.current.startX = e.clientX;
     dragRef.current.startY = e.clientY;
     dragRef.current.origLeft = pos.left ?? 0;
     dragRef.current.origTop = pos.top ?? 0;
+
     document.addEventListener("pointermove", onPointerMove);
     document.addEventListener("pointerup", onPointerUp);
   };
 
   const onPointerMove = (e) => {
     if (!dragRef.current.dragging) return;
+
     const dx = e.clientX - dragRef.current.startX;
     const dy = e.clientY - dragRef.current.startY;
+
     const node = modalRef.current;
     const rect = node ? node.getBoundingClientRect() : { width: 0, height: 0 };
     const vw = window.innerWidth;
     const vh = window.innerHeight;
 
-    const left = clamp(
-      dragRef.current.origLeft + dx,
-      8,
-      vw - rect.width - 8
-    );
-    const top = clamp(
-      dragRef.current.origTop + dy,
-      8,
-      vh - rect.height - 8
-    );
-    setPos({ left, top });
+    setPos({
+      left: clamp(dragRef.current.origLeft + dx, 8, vw - rect.width - 8),
+      top: clamp(dragRef.current.origTop + dy, 8, vh - rect.height - 8),
+    });
   };
 
   const onPointerUp = () => {
@@ -129,77 +121,54 @@ function BookModal({ book, anchor, onClose }) {
     document.removeEventListener("pointerup", onPointerUp);
   };
 
+  // Modal structure
   const modal = (
     <div
       className="book-modal-backdrop"
-      role="dialog"
-      aria-modal="true"
       onClick={onClose}
+      aria-modal="true"
+      role="dialog"
     >
       <div
         className="book-modal"
         ref={modalRef}
         onClick={(e) => e.stopPropagation()}
-        style={
-          pos.left != null
-            ? { left: pos.left, top: pos.top, position: "absolute" }
-            : undefined
-        }
+        style={{ left: pos.left, top: pos.top, position: "absolute" }}
       >
-        <div
-          className="modal-header"
-          onPointerDown={onPointerDown}
-          role="button"
-          aria-label="Move dialog"
-          tabIndex={0}
-        >
-          {/* Apple style red close button */}
-          <button
-            className="modal-close-apple"
-            aria-label="Close"
-            type="button"
-            onClick={onClose}
-          >
-            <span className="apple-close-dot" aria-hidden="true">
-              ●
+        <div className="modal-header" onPointerDown={onPointerDown}>
+          {/* macOS style close button */}
+          <button className="modal-close-apple" onClick={onClose}>
+            <span className="apple-close-dot">
+              <span className="apple-close-x">×</span>
             </span>
           </button>
+
           <div className="modal-header-title">{book.title}</div>
         </div>
 
         <div className="modal-body">
           <div className="modal-left">
-            <img src={book.src} alt={book.title} />
+            <img src={book.src} alt={book.title} loading="lazy" />
           </div>
 
           <div className="modal-right">
-            <h3 style={{ margin: "4px 0 6px" }}>{book.title}</h3>
-            {book.author && (
-              <p className="meta-author" style={{ margin: 0 }}>
-                {book.author}
-              </p>
-            )}
-            {book.review && (
-              <p style={{ marginTop: 8, fontWeight: 600 }}>{book.review}</p>
-            )}
+            <h3>{book.title}</h3>
+            {book.author && <p className="meta-author">{book.author}</p>}
+            {book.review && <p className="book-review">{book.review}</p>}
 
-            <label className="desc-label">
-              Your one-line takeaway (saved locally)
-            </label>
+            <label>Your one-line takeaway</label>
             <textarea
               className="quick-desc"
               value={desc}
               onChange={(e) => saveNotes(e.target.value)}
-              placeholder="Write your one-line takeaway…"
               rows={3}
             />
 
             <div className="comments">
-              <h4 style={{ margin: "0 0 6px" }}>Comments</h4>
+              <h4>Comments</h4>
+
               {comments.length === 0 && (
-                <p style={{ color: "#666", margin: "4px 0 10px" }}>
-                  Be the first to comment.
-                </p>
+                <p style={{ color: "#666" }}>No comments yet.</p>
               )}
 
               {comments.map((c, i) => (
@@ -208,33 +177,23 @@ function BookModal({ book, anchor, onClose }) {
                   <div className="comment-time">
                     {new Date(c.ts).toLocaleString()}
                   </div>
-                  <div
-                    style={{ gridColumn: "1 / -1" }}
-                    className="comment-text"
-                  >
-                    {c.text}
-                  </div>
+                  <div className="comment-text">{c.text}</div>
                 </div>
               ))}
 
               <div className="comment-form">
                 <input
-                  type="text"
                   placeholder="Name (optional)"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                 />
                 <textarea
+                  rows={3}
                   placeholder="Write a comment…"
-                  rows={4}
                   value={text}
                   onChange={(e) => setText(e.target.value)}
                 />
-                <button
-                  className="primary-button"
-                  type="button"
-                  onClick={addComment}
-                >
+                <button className="primary-button" onClick={addComment}>
                   Post comment
                 </button>
               </div>
@@ -252,31 +211,34 @@ export default function BookCarousel({ books = [] }) {
   const trackRef = useRef(null);
   const [canPrev, setCanPrev] = useState(false);
   const [canNext, setCanNext] = useState(false);
-  const [selected, setSelected] = useState(null); // { index, x, y } | null
+  const [selected, setSelected] = useState(null);
 
   useEffect(() => {
     const track = trackRef.current;
     if (!track) return;
+
     const update = () => {
       setCanPrev(track.scrollLeft > 5);
       setCanNext(
         track.scrollLeft + track.clientWidth < track.scrollWidth - 5
       );
     };
+
     update();
-    track.addEventListener("scroll", update, { passive: true });
+    track.addEventListener("scroll", update);
     window.addEventListener("resize", update);
+
     return () => {
       track.removeEventListener("scroll", update);
       window.removeEventListener("resize", update);
     };
-  }, [books]);
+  }, []);
 
-  const scrollByViewport = (dir = 1) => {
+  const scrollByViewport = (dir) => {
     const track = trackRef.current;
     if (!track) return;
-    const offset = Math.round(track.clientWidth * 0.9) * dir;
-    track.scrollBy({ left: offset, behavior: "smooth" });
+    const distance = Math.round(track.clientWidth * 0.9) * dir;
+    track.scrollBy({ left: distance, behavior: "smooth" });
   };
 
   return (
@@ -284,50 +246,21 @@ export default function BookCarousel({ books = [] }) {
       <div className="book-carousel">
         <button
           className="carousel-btn prev"
-          onClick={() => scrollByViewport(-1)}
-          aria-label="Previous books"
           disabled={!canPrev}
+          onClick={() => scrollByViewport(-1)}
         >
           ‹
         </button>
 
         <div className="carousel-viewport">
-          <div
-            className="carousel-track"
-            ref={trackRef}
-            tabIndex={0}
-            aria-live="polite"
-          >
+          <div className="carousel-track" ref={trackRef}>
             {books.map((b, i) => (
               <div
-                className="carousel-item"
                 key={b.id || i}
-                onClick={() =>
-                  setSelected({
-                    index: i,
-                    x: window.innerWidth / 2,
-                    y: window.innerHeight / 2,
-                  })
-                }
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    setSelected({
-                      index: i,
-                      x: window.innerWidth / 2,
-                      y: window.innerHeight / 2,
-                    });
-                  }
-                }}
-                aria-label={`Open ${b.title}`}
-                title={b.title}
+                className="carousel-item"
+                onClick={() => setSelected({ index: i })}
               >
-                <img
-                  src={b.src}
-                  alt={`${b.title} — ${b.author || ""}`}
-                  loading="lazy"
-                />
+                <img src={b.src} alt={b.title} loading="lazy" />
               </div>
             ))}
           </div>
@@ -335,9 +268,8 @@ export default function BookCarousel({ books = [] }) {
 
         <button
           className="carousel-btn next"
-          onClick={() => scrollByViewport(1)}
-          aria-label="Next books"
           disabled={!canNext}
+          onClick={() => scrollByViewport(1)}
         >
           ›
         </button>
@@ -346,7 +278,6 @@ export default function BookCarousel({ books = [] }) {
       {selected && (
         <BookModal
           book={books[selected.index]}
-          anchor={{ x: selected.x, y: selected.y }}
           onClose={() => setSelected(null)}
         />
       )}
