@@ -590,11 +590,14 @@ h2 { margin: 16px 24px; font-size: 18px; }
   cursor: grabbing;
 }
 
+/* macOS-style red close button */
 .modal-close-apple {
   background: transparent;
   border: none;
   padding: 0;
   cursor: pointer;
+  width: 16px;
+  height: 16px;
 }
 
 .apple-close-dot {
@@ -608,17 +611,26 @@ h2 { margin: 16px 24px; font-size: 18px; }
   justify-content: center;
 }
 
-.apple-close-x {
+/* crisp centered X using 2 bars */
+.apple-x-line {
   position: absolute;
-  font-size: 12px;
-  line-height: 12px;
-  font-weight: 700;
-  color: #220000;
-  top: -1px;
+  width: 8px;
+  height: 2px;
+  background: #2a0000;
+  border-radius: 1px;
 }
 
+.apple-x-line-1 {
+  transform: rotate(45deg);
+}
+
+.apple-x-line-2 {
+  transform: rotate(-45deg);
+}
+
+/* hover effect */
 .modal-close-apple:hover .apple-close-dot {
-  filter: brightness(0.95);
+  filter: brightness(0.92);
 }
 
 /* responsive width; positioned by inline left/top from JS */

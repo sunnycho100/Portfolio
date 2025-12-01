@@ -137,9 +137,10 @@ function BookModal({ book, onClose }) {
       >
         <div className="modal-header" onPointerDown={onPointerDown}>
           {/* macOS style close button */}
-          <button className="modal-close-apple" onClick={onClose}>
+          <button className="modal-close-apple" onClick={onClose} aria-label="Close">
             <span className="apple-close-dot">
-              <span className="apple-close-x">×</span>
+              <span className="apple-x-line apple-x-line-1" />
+              <span className="apple-x-line apple-x-line-2" />
             </span>
           </button>
 
