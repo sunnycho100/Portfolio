@@ -1,5 +1,7 @@
 // src/components/LeaveComment.jsx
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
+const API_BASE = import.meta?.env?.VITE_API_URL || "http://localhost:4000";
 
 export default function LeaveComment() {
   const [open, setOpen] = useState(false);
@@ -12,40 +14,36 @@ export default function LeaveComment() {
     message.trim().length > 0 &&
     message.trim().length <= 500;
 
-  function saveToLocalStorage(entry) {
-    const key = "portfolioComments";
-    try {
-      const existing = JSON.parse(localStorage.getItem(key) || "[]");
-      const next = [entry, ...(Array.isArray(existing) ? existing : [])];
-      localStorage.setItem(key, JSON.stringify(next));
-      // tell the comments section to refresh
-      window.dispatchEvent(new Event("comments-updated"));
-    } catch {
-      // ignore storage errors silently
-    }
-  }
-
-  function onSubmitLocal(e) {
+  async function onSubmit(e) {
     e.preventDefault();
     if (!canSubmit) return;
 
-    const entry = {
-      id: crypto.randomUUID(),
-      name: name.trim(),
-      relationship: relationship.trim(), // may be empty
-      message: message.trim(),
-      createdAt: new Date().toISOString(),
-    };
-
-    saveToLocalStorage(entry);
-    setName("");
-    setRelationship("");
-    setMessage("");
-    setOpen(false);
+    try {
+      const res = await fetch(`${API_BASE}/api/comments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: name.trim(),
+          relationship: relationship.trim(),
+          message: message.trim(),
+        }),
+      });
+      if (!res.ok) {
+        console.error("failed to post", await res.text());
+        return;
+      }
+      const created = await res.json();
+      setName("");
+      setRelationship("");
+      setMessage("");
+      setOpen(false);
+    } catch (e) {
+      console.error(e);
+    }
   }
 
   return (
-    <div className="leave-comment">
+    <div className="leave-comment" style={{ maxWidth: 900, marginInline: "auto" }}>
       <button className="btn" onClick={() => setOpen(true)}>
         Leave a comment
       </button>
@@ -55,7 +53,7 @@ export default function LeaveComment() {
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h3>Leave a comment</h3>
 
-            <form onSubmit={onSubmitLocal} className="form">
+            <form onSubmit={onSubmit} className="form">
               <label className="label">
                 <span>Name</span>
                 <input
@@ -74,9 +72,8 @@ export default function LeaveComment() {
                   type="text"
                   value={relationship}
                   onChange={(e) => setRelationship(e.target.value)}
-                  placeholder="e.g., classmate, mentor, coworker"
+                  placeholder="e.g., Mentor, Classmate"
                   className="input"
-                  maxLength={40}
                 />
               </label>
 

@@ -1,7 +1,7 @@
 // src/components/Contact.jsx
 import Reveal from "./Reveal.jsx";
 import { FaEnvelope, FaGithub, FaLinkedin } from "react-icons/fa";
-import LeaveComment from "./LeaveComment";
+import LeaveComment from "./LeaveComment.jsx";
 
 export default function Contact() {
   return (

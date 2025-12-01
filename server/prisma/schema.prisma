@@ -1,3 +1,4 @@
+// server/prisma/schema.prisma
 generator client {
   provider = "prisma-client-js"
 }
@@ -5,13 +6,15 @@ generator client {
 datasource db {
   provider          = "mysql"
   url               = env("DATABASE_URL")
-  shadowDatabaseUrl = env("SHADOW_DB_URL")
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
 }
 
 model Comment {
-  id         Int      @id @default(autoincrement())
-  name       String
-  relation   String?
-  message    String   @db.VarChar(500)
-  createdAt  DateTime @default(now())
+  id           Int      @id @default(autoincrement())
+  name         String   @db.VarChar(120)
+  relationship String?  @db.VarChar(80)
+  message      String   @db.VarChar(500)   // cap at 500 like the form
+  createdAt    DateTime @default(now())
+
+  @@index([createdAt])
 }

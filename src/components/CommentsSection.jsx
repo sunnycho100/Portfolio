@@ -1,6 +1,8 @@
 // src/components/CommentsSection.jsx
 import { useEffect, useState } from "react";
 
+const API_BASE = import.meta?.env?.VITE_API_URL || "http://localhost:4000";
+
 function initials(name) {
   const parts = name.trim().split(/\s+/);
   const a = parts[0]?.[0] ?? "";
@@ -15,28 +17,24 @@ function hueFromString(s) {
 }
 
 export default function CommentsSection() {
-  const [comments, setComments] = useState([]);
-
-  function load() {
-    try {
-      const key = "portfolioComments";
-      const data = JSON.parse(localStorage.getItem(key) || "[]");
-      setComments(Array.isArray(data) ? data : []);
-    } catch {
-      setComments([]);
-    }
-  }
+  const [dbComments, setDbComments] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    load();
-    const onUpdate = () => load();
-    window.addEventListener("comments-updated", onUpdate);
-    window.addEventListener("storage", onUpdate);
-    return () => {
-      window.removeEventListener("comments-updated", onUpdate);
-      window.removeEventListener("storage", onUpdate);
-    };
+    loadDbComments();
   }, []);
+
+  async function loadDbComments() {
+    try {
+      const res = await fetch(`${API_BASE}/api/comments?take=50`);
+      const data = await res.json();
+      setDbComments(data);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
     <details className="accordion">
@@ -49,12 +47,14 @@ export default function CommentsSection() {
       </summary>
 
       <div className="accordion-content">
-        {comments.length === 0 ? (
-          <p className="lang-empty">No comments yet.</p>
+        {loading ? (
+          <p>Loading comments…</p>
+        ) : dbComments.length === 0 ? (
+          <p className="lang-empty">No comments yet. Be the first to leave one!</p>
         ) : (
           <>
             <div className="comment-grid">
-              {comments.map((c) => {
+              {dbComments.map((c) => {
                 const hue = hueFromString(c.name || "");
                 return (
                   <article key={c.id} className="comment-card">
