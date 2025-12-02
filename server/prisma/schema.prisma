@@ -18,3 +18,16 @@ model Comment {
 
   @@index([createdAt])
 }
+
+model Book {
+  id          Int      @id @default(autoincrement())
+  title       String   @db.VarChar(200)
+  author      String?  @db.VarChar(150)
+  imagePath   String   @db.VarChar(300)  // e.g., "/books/How to Win Friends.jpg"
+  review      String?  @db.VarChar(500)  // optional brief review
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([title])
+  @@index([createdAt])
+}
